@@ -1,0 +1,69 @@
+{% load static %}
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'StockViewerApp/css/styles.css' %}">
+    <title> TradingViewer </title>
+</head>
+<body>
+    <div class = "home_page_container">
+        <video autoplay muted loop playsinline class="background-video">
+        <source src="{% static 'StockViewerApp/images/shooting_stars.mp4' %}" type="video/mp4">
+        Your browser does not support the video tag.
+        </video>
+        <div class = "home_page_wrapper">
+            <h1 class = "home_page_title">
+                TradingViewer
+            </h1>
+            
+            <div class = "stocks_container">
+                {% if stock_list %}
+
+                    <h2 class = "stocks_title">
+                        Stocks
+                    </h2>
+                    
+                    <div class = "stocks_wrapper">
+                        <div class = "stock_container">
+                    {% for stock in stock_list %}
+                            <a href = "{% url 'stock_detail' ticker=stock.ticker %}" class = "stock_image_link">
+                                <!-- <img src = "{{ stock.image_url }}" class = "stock_image"/> -->
+                                <h3 class = "stock_name"> {{ stock.ticker }} </h3>
+                            </a>
+                    {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if crypto_list %}
+
+                    <h2 class = "stocks_title">
+                        Crypto
+                    </h2>
+                    
+                    <div class = "stocks_wrapper">
+                        <div class = "stock_container">
+                    {% for crypto in crypto_list %}
+                            <a href = "{% url 'stock_detail' ticker=crypto.ticker %}" class = "stock_image_link">
+                                <!-- <img src = "{{ crypto.image_url }}" class = "stock_image"/> -->
+                                <h3 class = "stock_name"> {{ crypto.ticker }} </h3>
+                            </a>
+                    {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class = "update spreadsheet_database_container">
+                <form method="get" action="{% url 'home' %}">
+                    <button type="submit" name="update_database_spreadsheet" value="true">Update Spreadsheet</button>
+                </form>            
+            </div>
+        </div>
+    </div>
+</body>
+</html>

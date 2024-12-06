@@ -1,0 +1,154 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ stock.name }}</title>
+    <link rel="stylesheet" href="{% static 'StockViewerApp/css/styles.css' %}">
+</head>
+<body>
+    <div class = "individual_stock_container">
+        <div class = "individual_stock_title_container">
+            <h1 class = "individual_stock_title">{{ stock.name }} - {{ stock.ticker }}</h1>
+            <img class = "stock_image" src="{{ stock.image_url }}" alt="Image for {{ stock.name }}" class="stock_image">
+        </div>    
+        <div class = "individual_stock_table_container">
+            <table cellspacing="0" class = "individual_stock_table">
+                <tr class = "individual_stock_header_row">
+                    <th class = "individual_stock_table_header">Date</th>
+                    <th class = "individual_stock_table_header">Price</th>
+                    <th class = "individual_stock_table_header">Resistance</th>
+                    <th class = "individual_stock_table_header">Support</th>
+                    <th class = "individual_stock_table_header">Support/Resistance Score</th>
+                    <th class = "individual_stock_table_header">Ma</th>
+                    <th class = "individual_stock_table_header">Ma Score</th>
+                    <th class = "individual_stock_table_header">Macd 1d</th>
+                    <th class = "individual_stock_table_header">Macd 1d Velocity</th>
+                    <th class = "individual_stock_table_header">Macd 1d Score</th>
+                    <th class = "individual_stock_table_header">Macd 1w</th>
+                    <th class = "individual_stock_table_header">Macd 1w Velocity</th>
+                    <th class = "individual_stock_table_header">Macd 1w Score</th>
+                    <th class = "individual_stock_table_header">Total Score</th>
+                    <th class = "individual_stock_table_header">Direction</th>
+                </tr>
+                {% for data in stock_data %}
+                <tr class = "individual_stock_row">
+                    <td class = "individual_stock_item">
+                        {{ data.date }}
+                    </td>
+                    <td class = "individual_stock_item">
+                        {{ data.current_price }}
+                    </td>
+                    <td class="individual_stock_item">
+                        <input type="number" step="any" class="resistance-input" data-id="{{ data.id }}" value="{{ data.resistance }}">
+                    </td>
+                    <td class="individual_stock_item">
+                        <input type="number" step="any" class="support-input" data-id="{{ data.id }}" value="{{ data.support }}">
+                    </td>
+                    <td class = "individual_stock_item">
+                        {{ data.support_resistance_score }}
+                    </td>
+                    <td class = "individual_stock_item">
+                        {{ data.sma_200 }}
+                    </td>
+                    <td class = "individual_stock_item">
+                        {{ data.ma_score }}
+                    </td>
+                    <td class = "individual_stock_item">
+                        {{ data.daily_macd_histogram }}
+                    </td>
+                    <td class = "individual_stock_item">
+                        {{ data.daily_macd_velocity }}
+                    </td>
+                    <td class = "individual_stock_item">
+                        {{ data.daily_macd_score }}
+                    </td>
+                    <td class = "individual_stock_item">
+                        {{ data.weekly_macd_histogram }}
+                    </td>
+                    <td class = "individual_stock_item">
+                        {{ data.weekly_macd_velocity }}
+                    </td>
+                    <td class = "individual_stock_item">
+                        {{ data.weekly_macd_score }}
+                    </td>
+                    <td class = "individual_stock_item">
+                        {{ data.total_score }}
+                    </td>
+                    <td class = "individual_stock_item">
+                        {{ data.direction }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+        <div class = "trading_view_widget_container">
+            <!-- TradingView Widget BEGIN -->
+            <div class="tradingview-widget-container" style="height:100%;width:100%">
+            <div class="tradingview-widget-container__widget" style="height:calc(100% - 32px);width:100%"></div>
+            <div class="tradingview-widget-copyright"><a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank"><span class="blue-text">Track all markets on TradingView</span></a></div>
+            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
+            {
+            "autosize": true,
+            "symbol": "BINANCE:{{ stock.ticker }}",
+            "interval": "D",
+            "timezone": "Etc/UTC",
+            "theme": "dark",
+            "style": "1",
+            "locale": "en",
+            "withdateranges": true,
+            "hide_side_toolbar": false,
+            "allow_symbol_change": true,
+            "calendar": false,
+            "studies": [
+                "STD;MACD",
+                "STD;SMA"
+            ],
+            "support_host": "https://www.tradingview.com"
+            }
+            </script>
+            </div>
+            <!-- TradingView Widget END -->
+        </div>
+        <div class = "return_to_home_container">
+            <a href = "/" class = "return_to_home_button">
+                Return Home
+            </a>
+        </div>
+    </div>
+</body>
+
+<script>
+    document.querySelectorAll('.support-input, .resistance-input').forEach(function(input) {
+        input.addEventListener('change', function() {
+            var id = input.getAttribute('data-id');
+            var value = input.value;
+            var field = input.classList.contains('support-input') ? 'support' : 'resistance';
+
+            fetch("{% url 'update_stock_data' %}", {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    id: id,
+                    field: field,
+                    value: value
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data); // log the response to check what's coming back
+            })
+            .catch(error => {
+                console.error('Error updating data:', error);
+            });
+        });
+    });
+</script>
+
+
+</html>

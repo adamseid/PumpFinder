@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Stock Data</title>
+</head>
+<body>
+    {% for stock in stock_list %}
+        <h1>Stock Data for {{ stock.name }}, {{ stock.ticker }} </h1>
+
+        <h2>Recent Data</h2>
+
+        {% for stock_info in stock.stock_data.all %}
+            <table border="1">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Open</th>
+                        <th>Close</th>
+                        <th>High</th>
+                        <th>Low</th>
+                        <th>Volume</th>
+                        <th>SMA200</th>
+                        <th>Daily MACD</th>
+                        <th>Weekly MACD</th>
+                        <th>RSI</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>{{ stock_info.date }}</td>
+                        <td>{{ stock_info.open }}</td>
+                        <td>{{ stock_info.close }}</td>
+                        <td>{{ stock_info.high }}</td>
+                        <td>{{ stock_info.low }}</td>
+                        <td>{{ stock_info.volume }}</td>
+                        <td>{{ stock_info.sma_200 }}</td>
+                        <td>{{ stock_info.daily_macd_histogram }}</td>
+                        <td>{{ stock_info.weekly_macd_histogram }}</td>
+                        <td>{{ stock_info.rsi }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        {% empty %}
+            <li>No data available for this stock.</li>
+        {% endfor %}
+    {% empty %}
+        <li>No stocks available.</li>
+    {% endfor %}
+</body>
+</html>
