@@ -110,11 +110,13 @@ def update_database():
         weekly_stock_analysis = helper.get_stock_data(stock.ticker, stock.exchange, stock.screener, Interval.INTERVAL_1_WEEK, timeout)
         prev_stock_data = StockData.objects.filter(
             stock_list=stock,
-        ).order_by('-date').first()
-        support = prev_stock_data.support if prev_stock_data else None
-        resistance = prev_stock_data.resistance if prev_stock_data else None
+        ).order_by('-date').first()            
+        support = prev_stock_data.support if prev_stock_data else daily_stock_analysis['Pivot.M.Classic.S1']
+        resistance = prev_stock_data.resistance if prev_stock_data else daily_stock_analysis['Pivot.M.Classic.R1']
+
         if(stock.screener == "crypto"):
             helper.create_new_database_entry(daily_stock_analysis, weekly_stock_analysis, current_date, support, resistance, stock, prev_stock_data)
+            print(f"Added new StockData for {stock.ticker} on {current_date}")
         else:
             # If we are updating database during trading hours
             if start_time <= current_date <= end_time:

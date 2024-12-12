@@ -3,7 +3,6 @@ from tradingview_ta import TA_Handler, Interval, TradingView
 
 
 def get_stock_data(ticker, exchange, screener, interval, timeout):
-    print(ticker)
     handler = TA_Handler(
         symbol= ticker,
         exchange= exchange,
@@ -181,31 +180,31 @@ def create_new_database_entry(daily_stock_analysis, weekly_stock_analysis, curre
         else:
             direction = 0
     
-    if resistance is not None and support is not None:
-        if current_price > resistance:
-            adjusted_support_resistance = re_adjust_support_resistance(stock, support, resistance, current_price)
-            if adjusted_support_resistance:
-                resistance = adjusted_support_resistance.resistance
-                support = adjusted_support_resistance.support
-            else:
-                support = resistance
-                resistance = None
-        if current_price < support:
-            adjusted_support_resistance = re_adjust_support_resistance(stock, support, resistance, current_price)
-            if adjusted_support_resistance:
-                resistance = adjusted_support_resistance.resistance
-                support = adjusted_support_resistance.support
-            else:
-                support = resistance
-                resistance = None
-    elif resistance is not None:
-        if current_price > resistance:
-            support = resistance
-            resistance = None
-    elif support is not None:
-        if current_price < support:
-            resistance = support
-            support = None
+    # if resistance is not None and support is not None:
+    #     if current_price > resistance:
+    #         adjusted_support_resistance = re_adjust_support_resistance(stock, support, resistance, current_price)
+    #         if adjusted_support_resistance:
+    #             resistance = adjusted_support_resistance.resistance
+    #             support = adjusted_support_resistance.support
+    #         else:
+    #             support = resistance
+    #             resistance = None
+    #     if current_price < support:
+    #         adjusted_support_resistance = re_adjust_support_resistance(stock, support, resistance, current_price)
+    #         if adjusted_support_resistance:
+    #             resistance = adjusted_support_resistance.resistance
+    #             support = adjusted_support_resistance.support
+    #         else:
+    #             support = resistance
+    #             resistance = None
+    # elif resistance is not None:
+    #     if current_price > resistance:
+    #         support = resistance
+    #         resistance = None
+    # elif support is not None:
+    #     if current_price < support:
+    #         resistance = support
+    #         support = None
 
     new_stock_data = StockData(
         date=current_date,
@@ -345,31 +344,31 @@ def update_database_entry(prev_stock_data, daily_stock_analysis, weekly_stock_an
 
 
 
-    if resistance is not None and support is not None:
-        if current_price > resistance:
-            adjusted_support_resistance = re_adjust_support_resistance(stock, support, resistance, current_price)
-            if adjusted_support_resistance:
-                resistance = adjusted_support_resistance.resistance
-                support = adjusted_support_resistance.support
-            else:
-                support = resistance
-                resistance = None
-        if current_price < support:
-            adjusted_support_resistance = re_adjust_support_resistance(stock, support, resistance, current_price)
-            if adjusted_support_resistance:
-                resistance = adjusted_support_resistance.resistance
-                support = adjusted_support_resistance.support
-            else:
-                support = resistance
-                resistance = None
-    elif resistance is not None:
-        if current_price > resistance:
-            support = resistance
-            resistance = None
-    elif support is not None:
-        if current_price < support:
-            resistance = support
-            support = None
+    # if resistance is not None and support is not None:
+    #     if current_price > resistance:
+    #         adjusted_support_resistance = re_adjust_support_resistance(stock, support, resistance, current_price)
+    #         if adjusted_support_resistance:
+    #             resistance = adjusted_support_resistance.resistance
+    #             support = adjusted_support_resistance.support
+    #         else:
+    #             support = resistance
+    #             resistance = None
+    #     if current_price < support:
+    #         adjusted_support_resistance = re_adjust_support_resistance(stock, support, resistance, current_price)
+    #         if adjusted_support_resistance:
+    #             resistance = adjusted_support_resistance.resistance
+    #             support = adjusted_support_resistance.support
+    #         else:
+    #             support = resistance
+    #             resistance = None
+    # elif resistance is not None:
+    #     if current_price > resistance:
+    #         support = resistance
+    #         resistance = None
+    # elif support is not None:
+    #     if current_price < support:
+    #         resistance = support
+    #         support = None
 
     prev_stock_data.recommend_all = daily_stock_analysis.indicators['Recommend.Other']
     prev_stock_data.recommend_ma = daily_stock_analysis.indicators['Recommend.All']
