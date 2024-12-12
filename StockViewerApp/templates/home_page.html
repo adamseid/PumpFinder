@@ -7,7 +7,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{% static 'StockViewerApp/css/styles.css' %}">
-    <title> TradingViewer </title>
+    <title> PumpFinder </title>
 </head>
 <body>
     <div class = "home_page_container">
@@ -21,49 +21,114 @@
             </h1>
             
             <div class = "stocks_container">
-                {% if stock_list %}
+                <table class="home_stock_table">
+                    <thead>
+                        <tr class="home_stock_header_row">
+                            <th class="home_stock_table_header">Ticker</th>
+                            <th class="home_stock_table_header table_filter" data-filter="-total_score">Total Score</th>
+                            <th class="home_stock_table_header table_filter" data-filter="-direction">Direction</th>
+                            <th class="home_stock_table_header table_filter" data-filter="-current_price">Price</th>
+                            <th class="home_stock_table_header table_filter" data-filter="-price_change">Price Change</th>
+                            <th class="home_stock_table_header table_filter" data-filter="-resistance">Resistance</th>
+                            <th class="home_stock_table_header table_filter" data-filter="-support">Support</th>
+                            <th class="home_stock_table_header table_filter" data-filter="-support_resistance_score">Support / Resistance Score</th>
+                            <th class="home_stock_table_header table_filter" data-filter="-sma_200">Ma</th>
+                            <th class="home_stock_table_header table_filter" data-filter="-ma_score">Ma Score</th>
+                            <th class="home_stock_table_header table_filter" data-filter="-daily_macd_histogram">Macd 1d</th>
+                            <th class="home_stock_table_header table_filter" data-filter="-daily_macd_velocity">Macd 1d Velocity</th>
+                            <th class="home_stock_table_header table_filter" data-filter="-daily_macd_score">Macd 1d Score</th>
+                            <th class="home_stock_table_header table_filter" data-filter="-weekly_macd_histogram">Macd 1w</th>
+                            <th class="home_stock_table_header table_filter" data-filter="-weekly_macd_velocity">Macd 1w Velocity</th>
+                            <th class="home_stock_table_header table_filter" data-filter="-weekly_macd_score">Macd 1w Score</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stock-table-container">
+                        {% include '_stock_table.html' %}
+                    </tbody>
+                </table>
+                
 
-                    <h2 class = "stocks_title">
-                        Stocks
-                    </h2>
-                    
-                    <div class = "stocks_wrapper">
-                        <div class = "stock_container">
-                    {% for stock in stock_list %}
-                            <a href = "{% url 'stock_detail' ticker=stock.ticker %}" class = "stock_image_link">
-                                <!-- <img src = "{{ stock.image_url }}" class = "stock_image"/> -->
-                                <h3 class = "stock_name"> {{ stock.ticker }} </h3>
-                            </a>
-                    {% endfor %}
-                        </div>
-                    </div>
-                {% endif %}
-
-                {% if crypto_list %}
-
-                    <h2 class = "stocks_title">
-                        Crypto
-                    </h2>
-                    
-                    <div class = "stocks_wrapper">
-                        <div class = "stock_container">
-                    {% for crypto in crypto_list %}
-                            <a href = "{% url 'stock_detail' ticker=crypto.ticker %}" class = "stock_image_link">
-                                <!-- <img src = "{{ crypto.image_url }}" class = "stock_image"/> -->
-                                <h3 class = "stock_name"> {{ crypto.ticker }} </h3>
-                            </a>
-                    {% endfor %}
-                        </div>
-                    </div>
-                {% endif %}
-            </div>
-
-            <div class = "update spreadsheet_database_container">
-                <form method="get" action="{% url 'home' %}">
-                    <button type="submit" name="update_database_spreadsheet" value="true">Update Spreadsheet</button>
-                </form>            
+                <div class = "update spreadsheet_database_container">
+                    <form method="get" action="{% url 'home' %}">
+                        <button type="submit" name="update_database_spreadsheet" value="true">Update Spreadsheet</button>
+                    </form>            
+                </div>
             </div>
         </div>
     </div>
 </body>
+
+<script>
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var previous_filter="";
+
+        document.querySelectorAll(".table_filter").forEach(function(input) {
+            input.addEventListener("click", function() {
+                var filter_type = input.getAttribute("data-filter");
+                var url = new URL(window.location.href); 
+                // Toggle between descending and ascending sort
+                if (previous_filter === filter_type) {
+                    filter_type = filter_type.startsWith('-') ? filter_type.slice(1) : '-' + filter_type;
+                    previous_filter = ""
+                }else{
+                    previous_filter = filter_type
+                }
+                console.log(url)
+                console.log(filter_type)
+                console.log(previous_filter)
+                url.searchParams.set('sort', filter_type); 
+
+                fetch(url.toString(), {
+                    method: "GET",
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.table_html) {
+                        document.getElementById("stock-table-container").innerHTML = data.table_html;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error updating data:', error);
+                });
+            });
+        });
+
+        document.querySelectorAll('.support-input, .resistance-input').forEach(function(input) {
+            input.addEventListener('change', function() {
+                var id = input.getAttribute('data-id');
+                var value = input.value;
+                var field = input.classList.contains('support-input') ? 'support' : 'resistance';
+
+                fetch("{% url 'update_stock_data' %}", {
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        id: id,
+                        field: field,
+                        value: value
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data); // log the response to check what's coming back
+                })
+                .catch(error => {
+                    console.error('Error updating data:', error);
+                });
+            });
+        });
+    });
+
+</script>
+
 </html>
+
+

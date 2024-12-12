@@ -44,6 +44,7 @@ def stock_detail(request, ticker):
             'weekly_macd_score': round_significant(data.weekly_macd_score),
             'total_score': round_significant(data.total_score),
             'direction': round_significant(data.direction),
+            'exchange': stock.exchange
         })
 
     return render(request, 'stock_detail.html', {'stock': stock, 'stock_data': stock_data})

@@ -17,38 +17,10 @@ SERVICE_ACCOUNT_FILE = os.path.join(settings.BASE_DIR, 'StockViewerApp', 'static
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
 # The ID of your spreadsheet (get it from the URL of the Google Sheet)
-SPREADSHEET_ID = '1t1j18sULoxu_yPIP4mmN2zOrANC--un6k9iGHB2E3Zo'
-# SPREADSHEET_ID = '1Cv3fYqNMapymGytbBULjT6Tc3BDISp5SfmmJbhEaZTE'
+# SPREADSHEET_ID = '1t1j18sULoxu_yPIP4mmN2zOrANC--un6k9iGHB2E3Zo'
+SPREADSHEET_ID = '1Cv3fYqNMapymGytbBULjT6Tc3BDISp5SfmmJbhEaZTE'
 
-def get_stock_data(ticker, exchange, screener, interval, timeout):
-    handler = TA_Handler(
-        symbol= ticker,
-        exchange= exchange,
-        screener= screener,
-        interval= interval,
-        timeout= timeout
-    )
 
-    analysis = handler.get_analysis()
-
-    return analysis
-
-def add_new_stocks(ticker, screener, exchange, name=None, category=None, sector=None, industry=None, image_url=None):
-
-    if not Stock_List.objects.filter(ticker=ticker).exists():
-        new_stock = Stock_List(
-            ticker=ticker,
-            screener=screener,
-            exchange=exchange,
-            name=name,
-            category=category,
-            sector=sector,
-            industry=industry,
-            image_url=image_url,
-        )
-        new_stock.save()
-    
-    return
 
 def read_stocks_data():
     # Authenticate and initialize the Sheets API service
@@ -63,12 +35,13 @@ def read_stocks_data():
         for tab in ["Stocks", "Crypto"]:
             range_name = f'{tab}'  # Specify the tab name
             result = service.spreadsheets().values().get(spreadsheetId=SPREADSHEET_ID, range=range_name).execute()
+            print(result)
             values = result.get('values', [])
 
             if values:
                 data = values[1:]  # Remaining rows as data
                 for stocks in data:
-                    add_new_stocks(ticker=stocks[0], screener=stocks[1], exchange=stocks[2])
+                    helper.add_new_stocks(ticker=stocks[0], screener=stocks[1], exchange=stocks[2])
                 
             else:
                 print(f"No data found in the '{tab}' tab.")
@@ -133,8 +106,8 @@ def update_database():
     stock_list = Stock_List.objects.all()
     timeout = None
     for stock in stock_list:
-        daily_stock_analysis = get_stock_data(stock.ticker, stock.exchange, stock.screener, Interval.INTERVAL_1_DAY, timeout)
-        weekly_stock_analysis = get_stock_data(stock.ticker, stock.exchange, stock.screener, Interval.INTERVAL_1_WEEK, timeout)
+        daily_stock_analysis = helper.get_stock_data(stock.ticker, stock.exchange, stock.screener, Interval.INTERVAL_1_DAY, timeout)
+        weekly_stock_analysis = helper.get_stock_data(stock.ticker, stock.exchange, stock.screener, Interval.INTERVAL_1_WEEK, timeout)
         prev_stock_data = StockData.objects.filter(
             stock_list=stock,
         ).order_by('-date').first()
@@ -150,7 +123,7 @@ def update_database():
             # If we are updating database not during trading hours
             else:
                 if prev_stock_data and prev_stock_data.date.date() == current_date.date():
-                    helper.update_database_entry(prev_stock_data, daily_stock_analysis, weekly_stock_analysis, support, resistance)
+                    helper.update_database_entry(prev_stock_data, daily_stock_analysis, weekly_stock_analysis, support, resistance, stock)
                     print(f"Updated StockData for {stock.ticker} on {current_date}")
                 else:
                     helper.create_new_database_entry(daily_stock_analysis, weekly_stock_analysis, current_date, support, resistance, stock, prev_stock_data)

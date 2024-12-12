@@ -1,7 +1,52 @@
 from ...models import Stock_List, StockData
+from tradingview_ta import TA_Handler, Interval, TradingView
 
 
-def get_support_resistance_score(support, resistance , price):
+def get_stock_data(ticker, exchange, screener, interval, timeout):
+    print(ticker)
+    handler = TA_Handler(
+        symbol= ticker,
+        exchange= exchange,
+        screener= screener,
+        interval= interval,
+        timeout= timeout
+    )
+
+    analysis = handler.get_analysis()
+
+    return analysis
+
+def add_new_stocks(ticker, screener, exchange, name=None, category=None, sector=None, industry=None, image_url=None):
+
+    if not Stock_List.objects.filter(ticker=ticker).exists():
+        new_stock = Stock_List(
+            ticker=ticker,
+            screener=screener,
+            exchange=exchange,
+            name=name,
+            category=category,
+            sector=sector,
+            industry=industry,
+            image_url=image_url,
+        )
+        new_stock.save()
+    
+    return
+
+def re_adjust_support_resistance(stock, support, resistance, current_price):
+    previous_support_resistance = StockData.objects.filter(
+        stock_list=stock,
+        support__lt=current_price,  # Support is less than current price
+        resistance__gt=current_price  # Resistance is greater than current price
+    ).exclude(
+        support=support,
+        resistance=resistance
+    ).order_by('-date').first()
+    if previous_support_resistance:
+        return previous_support_resistance
+    return None
+
+def get_support_resistance_score(support, resistance , price, stock):
     if support is None or resistance is None:
         return 0
 
@@ -10,34 +55,41 @@ def get_support_resistance_score(support, resistance , price):
     elif price < support:
         return -2
     
+    # Get all StockData entries for the specific stock, ordered by date (most recent first)
+    support_resistance_broken = StockData.objects.filter(
+        stock_list=stock
+    ).exclude(
+        support=support,
+        resistance=resistance
+    ).filter(
+        support__isnull=False,
+        resistance__isnull=False
+    ).order_by('-date').first()
+
+    if support_resistance_broken:
+        if support_resistance_broken.support == resistance:
+            return -2
+        if support_resistance_broken.resistance == support:
+            return 2
     return 0
 
 def get_ma_score(sma200 , price):
+    if sma200 is None:
+        return 0
     if price > sma200:
         return 2
     elif price < sma200:
         return -2
     return 0
 
-def get_daily_macd_velocity(dailyMacd, prev_stock_data):
-    previous_macd = prev_stock_data.daily_macd_histogram
-    return float(dailyMacd) - float(previous_macd)
+def get_macd_velocity(Macd, prev_Macd):
+    previous_macd = prev_Macd.daily_macd_histogram
+    return float(Macd) - float(previous_macd)
 
-def get_daily_macd_score(dailyMacd):
-    if float(dailyMacd) > 0:
+def get_macd_score(Macd, MacdVelocity):
+    if float(Macd) > 0 and MacdVelocity > 0:
         return 2
-    elif float(dailyMacd) < 0:
-        return -2
-    return 0
-
-def get_weekly_macd_velocity(weeklyMacd, prev_stock_data):
-    previous_macd = prev_stock_data.weekly_macd_histogram
-    return float(weeklyMacd) - float(previous_macd)
-
-def get_weekly_macd_score(weeklyMacd):
-    if float(weeklyMacd) > 0:
-        return 2
-    elif float(weeklyMacd) < 0:
+    elif float(Macd) < 0 and MacdVelocity < 0:
         return -2
     return 0
 
@@ -99,28 +151,62 @@ def get_total_score(stock_data):
     return total_score_array
 
 def create_new_database_entry(daily_stock_analysis, weekly_stock_analysis, current_date, support, resistance, stock, prev_stock_data):
-    current_price = get_current_price(daily_stock_analysis.indicators['close'], daily_stock_analysis.indicators['high'], daily_stock_analysis.indicators['low'])
-    support_resistance_score = get_support_resistance_score(support, resistance , current_price)
+    # current_price = get_current_price(daily_stock_analysis.indicators['close'], daily_stock_analysis.indicators['high'], daily_stock_analysis.indicators['low'])
+    
+    current_price = daily_stock_analysis.indicators['close']
+    support_resistance_score = get_support_resistance_score(support, resistance , current_price, stock)
     ma_score = get_ma_score(daily_stock_analysis.indicators['SMA200'] , current_price)
+    daily_Macd = daily_stock_analysis.indicators['MACD.macd'] - daily_stock_analysis.indicators['MACD.signal']
+    weekly_Macd = weekly_stock_analysis.indicators['MACD.macd'] - weekly_stock_analysis.indicators['MACD.signal']
     daily_macd_velocity = None
     weekly_macd_velocity = None
+    daily_macd_score = None
+    weekly_macd_score = None
+    direction = None
+    total_score = None
     if prev_stock_data is not None:
-        daily_macd_velocity = get_daily_macd_velocity((daily_stock_analysis.indicators['MACD.macd'] - daily_stock_analysis.indicators['MACD.signal']), prev_stock_data)
-        weekly_macd_velocity = get_weekly_macd_velocity((weekly_stock_analysis.indicators['MACD.macd'] - weekly_stock_analysis.indicators['MACD.signal']), prev_stock_data)
-
-    daily_macd_score = get_daily_macd_score((daily_stock_analysis.indicators['MACD.macd'] - daily_stock_analysis.indicators['MACD.signal']))
-    weekly_macd_score = get_weekly_macd_score((weekly_stock_analysis.indicators['MACD.macd'] - weekly_stock_analysis.indicators['MACD.signal']))
-    total_score = support_resistance_score + ma_score + daily_macd_score + weekly_macd_score
-    direction = 0
-    if total_score > 4:
-        direction = 2
-    elif total_score > 2:
-        direction = 1
-    elif total_score < -2:
-        direction = -1
-    elif total_score < -4:
-        direction = -2
+        daily_macd_velocity = get_macd_velocity(daily_Macd, prev_stock_data)
+        weekly_macd_velocity = get_macd_velocity(weekly_Macd, prev_stock_data)
+        daily_macd_score = get_macd_score(daily_Macd, daily_macd_velocity)
+        weekly_macd_score = get_macd_score(weekly_Macd, weekly_macd_velocity)
+        total_score = support_resistance_score + ma_score + daily_macd_score + weekly_macd_score
+        if total_score > 4:
+            direction = 2
+        elif total_score > 2:
+            direction = 1
+        elif total_score < -2:
+            direction = -1
+        elif total_score < -4:
+            direction = -2
+        else:
+            direction = 0
     
+    if resistance is not None and support is not None:
+        if current_price > resistance:
+            adjusted_support_resistance = re_adjust_support_resistance(stock, support, resistance, current_price)
+            if adjusted_support_resistance:
+                resistance = adjusted_support_resistance.resistance
+                support = adjusted_support_resistance.support
+            else:
+                support = resistance
+                resistance = None
+        if current_price < support:
+            adjusted_support_resistance = re_adjust_support_resistance(stock, support, resistance, current_price)
+            if adjusted_support_resistance:
+                resistance = adjusted_support_resistance.resistance
+                support = adjusted_support_resistance.support
+            else:
+                support = resistance
+                resistance = None
+    elif resistance is not None:
+        if current_price > resistance:
+            support = resistance
+            resistance = None
+    elif support is not None:
+        if current_price < support:
+            resistance = support
+            support = None
+
     new_stock_data = StockData(
         date=current_date,
         recommend_all = daily_stock_analysis.indicators['Recommend.Other'],
@@ -233,14 +319,17 @@ def create_new_database_entry(daily_stock_analysis, weekly_stock_analysis, curre
     )
     new_stock_data.save()  
 
-def update_database_entry(prev_stock_data, daily_stock_analysis, weekly_stock_analysis, support, resistance):
-    current_price = get_current_price(daily_stock_analysis.indicators['close'], daily_stock_analysis.indicators['high'], daily_stock_analysis.indicators['low'])
-    support_resistance_score = get_support_resistance_score(support, resistance , current_price)
+def update_database_entry(prev_stock_data, daily_stock_analysis, weekly_stock_analysis, support, resistance, stock):
+    # current_price = get_current_price(daily_stock_analysis.indicators['close'], daily_stock_analysis.indicators['high'], daily_stock_analysis.indicators['low'])
+    current_price = daily_stock_analysis.indicators['close']
+    support_resistance_score = get_support_resistance_score(support, resistance , current_price, prev_stock_data)
     ma_score = get_ma_score(daily_stock_analysis.indicators['SMA200'] , current_price)
-    daily_macd_velocity = get_daily_macd_velocity((daily_stock_analysis.indicators['MACD.macd'] - daily_stock_analysis.indicators['MACD.signal']), prev_stock_data)
-    daily_macd_score = get_daily_macd_score((daily_stock_analysis.indicators['MACD.macd'] - daily_stock_analysis.indicators['MACD.signal']))
-    weekly_macd_velocity = get_weekly_macd_velocity((weekly_stock_analysis.indicators['MACD.macd'] - weekly_stock_analysis.indicators['MACD.signal']), prev_stock_data)
-    weekly_macd_score = get_weekly_macd_score((weekly_stock_analysis.indicators['MACD.macd'] - weekly_stock_analysis.indicators['MACD.signal']))
+    daily_Macd = daily_stock_analysis.indicators['MACD.macd'] - daily_stock_analysis.indicators['MACD.signal']
+    weekly_Macd = weekly_stock_analysis.indicators['MACD.macd'] - weekly_stock_analysis.indicators['MACD.signal']
+    daily_macd_velocity = get_macd_velocity(daily_Macd, prev_stock_data)
+    weekly_macd_velocity = get_macd_velocity(weekly_Macd, prev_stock_data)
+    daily_macd_score = get_macd_score(daily_Macd, daily_macd_velocity)
+    weekly_macd_score = get_macd_score(weekly_Macd, weekly_macd_velocity)
     total_score = support_resistance_score + ma_score + daily_macd_score + weekly_macd_score
     direction = 0
     if total_score > 4:
@@ -251,6 +340,37 @@ def update_database_entry(prev_stock_data, daily_stock_analysis, weekly_stock_an
         direction = -1
     elif total_score < -4:
         direction = -2
+    else:
+        direction = 0
+
+
+
+    if resistance is not None and support is not None:
+        if current_price > resistance:
+            adjusted_support_resistance = re_adjust_support_resistance(stock, support, resistance, current_price)
+            if adjusted_support_resistance:
+                resistance = adjusted_support_resistance.resistance
+                support = adjusted_support_resistance.support
+            else:
+                support = resistance
+                resistance = None
+        if current_price < support:
+            adjusted_support_resistance = re_adjust_support_resistance(stock, support, resistance, current_price)
+            if adjusted_support_resistance:
+                resistance = adjusted_support_resistance.resistance
+                support = adjusted_support_resistance.support
+            else:
+                support = resistance
+                resistance = None
+    elif resistance is not None:
+        if current_price > resistance:
+            support = resistance
+            resistance = None
+    elif support is not None:
+        if current_price < support:
+            resistance = support
+            support = None
+
     prev_stock_data.recommend_all = daily_stock_analysis.indicators['Recommend.Other']
     prev_stock_data.recommend_ma = daily_stock_analysis.indicators['Recommend.All']
     prev_stock_data.recommend_other = daily_stock_analysis.indicators['Recommend.MA']

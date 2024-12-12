@@ -3,7 +3,7 @@ from django.views.decorators.csrf import csrf_exempt  # For bypassing CSRF on AJ
 from ..models import StockData
 import json
 
-@csrf_exempt  # This is needed only if you're having CSRF issues and want to disable CSRF check for this view
+@csrf_exempt  
 def update_stock_data(request):
     if request.method == 'POST':
         # Check if the request contains JSON data
