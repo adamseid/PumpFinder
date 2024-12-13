@@ -9,14 +9,6 @@ from django.http import JsonResponse
 from django.template.loader import render_to_string
 from decimal import Decimal, ROUND_HALF_UP
 
-
-
-def update_database_spreadsheet():
-    # read_stocks_data()
-    update_database()
-
-    # update_spreadsheet()
-
 def round_significant(num, sig_digits=3):
     if num is None:
         return num
@@ -28,9 +20,15 @@ def round_significant(num, sig_digits=3):
         return round(num, sig_digits)
 
 def home_page(request):
-    if request.method == 'GET' and 'update_database_spreadsheet' in request.GET:
-        update_database_spreadsheet()
+    if request.method == 'GET' and 'update_stock_list' in request.GET:
+        read_stocks_data()
     
+    if request.method == 'GET' and 'update_database' in request.GET:
+        update_database()
+
+    if request.method == 'GET' and 'update_spreadsheet' in request.GET:
+        update_spreadsheet()
+
     sort_field = request.GET.get('sort', "-total_score")
     most_recent_stock_data = (
         StockData.objects.filter(

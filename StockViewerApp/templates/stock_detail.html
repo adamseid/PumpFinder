@@ -5,14 +5,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ stock.name }}</title>
+    <title>{{ stock.ticker }}</title>
     <link rel="stylesheet" href="{% static 'StockViewerApp/css/styles.css' %}">
 </head>
 <body>
     <div class = "individual_stock_container">
         <div class = "individual_stock_title_container">
-            <h1 class = "individual_stock_title">{{ stock.name }} - {{ stock.ticker }}</h1>
-            <img class = "stock_image" src="{{ stock.image_url }}" alt="Image for {{ stock.name }}" class="stock_image">
+            <h1 class = "individual_stock_title">{{ stock.ticker }}</h1>
         </div>    
         <div class = "individual_stock_table_container">
             <table cellspacing="0" class = "individual_stock_table">
@@ -104,7 +103,8 @@
             "calendar": false,
             "studies": [
                 "STD;MACD",
-                "STD;SMA"
+                "STD;MA%Ribbon",
+                "STD;RSI"
             ],
             "support_host": "https://www.tradingview.com"
             }

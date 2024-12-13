@@ -48,10 +48,16 @@
                 </table>
                 
 
-                <div class = "update spreadsheet_database_container">
+                <div class = "home_page_button_container">
                     <form method="get" action="{% url 'home' %}">
-                        <button type="submit" name="update_database_spreadsheet" value="true">Update Spreadsheet</button>
-                    </form>            
+                        <button class = "home_page_buttons" type="submit" name="update_stock_list" value="true">Update Stock List</button>
+                    </form>          
+                    <form method="get" action="{% url 'home' %}">
+                        <button class = "home_page_buttons" type="submit" name="update_database"  value="true">Update Stock Data</button>
+                    </form>   
+                    <form method="get" action="{% url 'home' %}">
+                        <button class = "home_page_buttons" type="submit" name="update_spreadsheet" value="true">Update Google Spreadsheet</button>
+                    </form>     
                 </div>
             </div>
         </div>
@@ -62,6 +68,10 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         var previous_filter="";
+
+        function redirectToHome() {
+            window.location.href = "/";
+        }
 
         document.querySelectorAll(".table_filter").forEach(function(input) {
             input.addEventListener("click", function() {
@@ -74,9 +84,7 @@
                 }else{
                     previous_filter = filter_type
                 }
-                console.log(url)
-                console.log(filter_type)
-                console.log(previous_filter)
+
                 url.searchParams.set('sort', filter_type); 
 
                 fetch(url.toString(), {

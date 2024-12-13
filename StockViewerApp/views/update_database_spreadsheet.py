@@ -1,7 +1,7 @@
-from tradingview_ta import TA_Handler, Interval, TradingView
+from tradingview_ta import Interval
 from datetime import datetime
 import pytz
-from tradingview_ta import TA_Handler, Interval
+from tradingview_ta import Interval
 from ..models import Stock_List, StockData
 import os
 from django.conf import settings
@@ -111,8 +111,8 @@ def update_database():
         prev_stock_data = StockData.objects.filter(
             stock_list=stock,
         ).order_by('-date').first()            
-        support = prev_stock_data.support if prev_stock_data else daily_stock_analysis['Pivot.M.Classic.S1']
-        resistance = prev_stock_data.resistance if prev_stock_data else daily_stock_analysis['Pivot.M.Classic.R1']
+        support = prev_stock_data.support if prev_stock_data else daily_stock_analysis.indicators['Pivot.M.Classic.S1']
+        resistance = prev_stock_data.resistance if prev_stock_data else daily_stock_analysis.indicators['Pivot.M.Classic.R1']
 
         if(stock.screener == "crypto"):
             helper.create_new_database_entry(daily_stock_analysis, weekly_stock_analysis, current_date, support, resistance, stock, prev_stock_data)
