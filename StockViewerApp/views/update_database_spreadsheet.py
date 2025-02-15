@@ -8,6 +8,11 @@ from django.conf import settings
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 from .helper import helper
+import environ
+
+env = environ.Env(
+    DEBUG=(bool, False)  # Default DEBUG to False if not set
+)
 
 
 # Path to your Service Account JSON file
@@ -17,8 +22,8 @@ SERVICE_ACCOUNT_FILE = os.path.join(settings.BASE_DIR, 'StockViewerApp', 'static
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
 # The ID of your spreadsheet (get it from the URL of the Google Sheet)
-# SPREADSHEET_ID = '1t1j18sULoxu_yPIP4mmN2zOrANC--un6k9iGHB2E3Zo'
-SPREADSHEET_ID = '1Cv3fYqNMapymGytbBULjT6Tc3BDISp5SfmmJbhEaZTE'
+# TEST_SPREADSHEET_ID = env("TEST_SPREADSHEET_ID")
+SPREADSHEET_ID = env("SPREADSHEET_ID")
 
 
 
@@ -108,26 +113,30 @@ def update_database():
     for stock in stock_list:
         daily_stock_analysis = helper.get_stock_data(stock.ticker, stock.exchange, stock.screener, Interval.INTERVAL_1_DAY, timeout)
         weekly_stock_analysis = helper.get_stock_data(stock.ticker, stock.exchange, stock.screener, Interval.INTERVAL_1_WEEK, timeout)
-        prev_stock_data = StockData.objects.filter(
-            stock_list=stock,
-        ).order_by('-date').first()            
-        support = prev_stock_data.support if prev_stock_data else daily_stock_analysis.indicators['Pivot.M.Classic.S1']
-        resistance = prev_stock_data.resistance if prev_stock_data else daily_stock_analysis.indicators['Pivot.M.Classic.R1']
+        if(daily_stock_analysis and weekly_stock_analysis):
+            prev_stock_data = StockData.objects.filter(
+                stock_list=stock,
+            ).order_by('-date').first()            
+            # support = prev_stock_data.support if prev_stock_data else daily_stock_analysis.indicators['Pivot.M.Classic.S1']
+            # resistance = prev_stock_data.resistance if prev_stock_data else daily_stock_analysis.indicators['Pivot.M.Classic.R1']
+            
+            support = daily_stock_analysis.indicators['Pivot.M.Classic.S1']
+            resistance = daily_stock_analysis.indicators['Pivot.M.Classic.R1']
 
-        if(stock.screener == "crypto"):
-            helper.create_new_database_entry(daily_stock_analysis, weekly_stock_analysis, current_date, support, resistance, stock, prev_stock_data)
-            print(f"Added new StockData for {stock.ticker} on {current_date}")
-        else:
-            # If we are updating database during trading hours
-            if start_time <= current_date <= end_time:
+            if(stock.screener == "crypto"):
                 helper.create_new_database_entry(daily_stock_analysis, weekly_stock_analysis, current_date, support, resistance, stock, prev_stock_data)
                 print(f"Added new StockData for {stock.ticker} on {current_date}")
-            # If we are updating database not during trading hours
             else:
-                if prev_stock_data and prev_stock_data.date.date() == current_date.date():
-                    helper.update_database_entry(prev_stock_data, daily_stock_analysis, weekly_stock_analysis, support, resistance, stock)
-                    print(f"Updated StockData for {stock.ticker} on {current_date}")
-                else:
+                # If we are updating database during trading hours
+                if start_time <= current_date <= end_time:
                     helper.create_new_database_entry(daily_stock_analysis, weekly_stock_analysis, current_date, support, resistance, stock, prev_stock_data)
                     print(f"Added new StockData for {stock.ticker} on {current_date}")
+                # If we are updating database not during trading hours
+                else:
+                    if prev_stock_data and prev_stock_data.date.date() == current_date.date():
+                        helper.update_database_entry(prev_stock_data, daily_stock_analysis, weekly_stock_analysis, support, resistance, stock)
+                        print(f"Updated StockData for {stock.ticker} on {current_date}")
+                    else:
+                        helper.create_new_database_entry(daily_stock_analysis, weekly_stock_analysis, current_date, support, resistance, stock, prev_stock_data)
+                        print(f"Added new StockData for {stock.ticker} on {current_date}")
     return

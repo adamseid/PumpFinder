@@ -37,23 +37,25 @@ def home_page(request):
         .select_related('stock_list')  
         .order_by(sort_field)  
     )
-
+# stock_data.price_change = round_significant(stock_data.price_change) 
     for stock_data in most_recent_stock_data:
         stock_data.total_score = round_significant(stock_data.total_score)  
-        stock_data.direction = round_significant(stock_data.direction) 
         stock_data.current_price = round_significant(stock_data.current_price)  
-        stock_data.price_change = round_significant(stock_data.price_change) 
-        stock_data.resistance = round_significant(stock_data.resistance)  
-        stock_data.support = round_significant(stock_data.support) 
+        stock_data.daily_profit = round_significant(stock_data.current_price * (stock_data.price_change/100))
+        stock_data.daily_return = round_significant((stock_data.current_price *  (stock_data.price_change/100)) / (stock_data.current_price *  (stock_data.price_change/100) + stock_data.current_price))
         stock_data.support_resistance_score = round_significant(stock_data.support_resistance_score)  
-        stock_data.sma_200 = round_significant(stock_data.sma_200) 
-        stock_data.ma_score = round_significant(stock_data.ma_score)  
-        stock_data.daily_macd_histogram = round_significant(stock_data.daily_macd_histogram) 
+        stock_data.kinematics_score = 0
+        stock_data.five_day_velocity_score = 0
+        stock_data.five_day_accelaration_score = 0
         stock_data.daily_macd_velocity = round_significant(stock_data.daily_macd_velocity)  
         stock_data.daily_macd_score = round_significant(stock_data.daily_macd_score) 
-        stock_data.weekly_macd_histogram = round_significant(stock_data.weekly_macd_histogram)  
         stock_data.weekly_macd_velocity = round_significant(stock_data.weekly_macd_velocity) 
-        stock_data.weekly_macd_score = round_significant(stock_data.weekly_macd_score)  
+        stock_data.weekly_macd_score = round_significant(stock_data.weekly_macd_score) 
+        total_ma_score =  stock_data.ma_50d_score + stock_data.ma_100d_score + stock_data.ma_200d_score
+        stock_data.ma_50d_score = round_significant(stock_data.ma_50d_score)  
+        stock_data.ma_100d_score = round_significant(stock_data.ma_100d_score)  
+        stock_data.ma_200d_score = round_significant(stock_data.ma_200d_score)  
+        stock_data.ma_score = round_significant(total_ma_score)   
 
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':  # Handle AJAX requests
         table_html = render_to_string('_stock_table.html', {'stock_list': most_recent_stock_data})

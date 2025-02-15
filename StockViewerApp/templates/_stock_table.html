@@ -6,23 +6,21 @@
         </a>
     </td>
     <td class="home_stock_item">{{ data.total_score }}</td>
-    <td class="home_stock_item">{{ data.direction }}</td>
     <td class="home_stock_item">${{ data.current_price }}</td>
-    <td class="home_stock_item">{{ data.price_change }}%</td>
-    <td class="home_stock_item">
-        <input type="number" step="any" class="resistance-input home_table_inputs" data-id="{{ data.id }}" value="{{ data.resistance }}">
-    </td>
-    <td class="home_stock_item">
-        <input type="number" step="any" class="support-input home_table_inputs" data-id="{{ data.id }}" value="{{ data.support }}">
-    </td>
+    <td class="home_stock_item">${{ data.daily_profit }}</td>
+    <td class="home_stock_item">${{ data.daily_return }}</td>
     <td class="home_stock_item">{{ data.support_resistance_score }}</td>
-    <td class="home_stock_item">${{ data.sma_200 }}</td>
-    <td class="home_stock_item">{{ data.ma_score }}</td>
-    <td class="home_stock_item">{{ data.daily_macd_histogram }}</td>
-    <td class="home_stock_item">{{ data.daily_macd_velocity }}</td>
+    <td class="home_stock_item">{{ data.kinematics_score }}</td>
+    <td class="home_stock_item">{{ data.five_day_velocity_score }}</td>
+    <td class="home_stock_item">{{ data.five_day_accelaration_score }}</td>
+    <td class="home_stock_item">{{ data.support_resistance_score }}</td>
     <td class="home_stock_item">{{ data.daily_macd_score }}</td>
-    <td class="home_stock_item">{{ data.weekly_macd_histogram }}</td>
-    <td class="home_stock_item">{{ data.weekly_macd_velocity }}</td>
+    <td class="home_stock_item">{{ data.daily_macd_velocity }}</td>
     <td class="home_stock_item">{{ data.weekly_macd_score }}</td>
+    <td class="home_stock_item">{{ data.weekly_macd_velocity }}</td>
+    <td class="home_stock_item">{{ data.ma_score }} </td>
+    <td class="home_stock_item">{{ data.ma_50d_score }}</td>
+    <td class="home_stock_item">{{ data.ma_100d_score }}</td>
+    <td class="home_stock_item">{{ data.ma_200d_score }}</td>
 </tr>
 {% endfor %}
